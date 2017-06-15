@@ -1,19 +1,11 @@
-def complement(str)
-  str.tr('ACGT', 'TGCA')
+def complement(nuc_idx)
+  3 - nuc_idx
 end
 
 SNVContext = Struct.new(:flank_5, :mid_before, :flank_3, :mid_after) do
   def self.from_string(str)
-    flank_5, mid_before, mid_after, flank_3 = str.upcase.match(/^([ACGT])\[([ACGT])\/([ACGT])\]([ACGT])$/i).values_at(1,2,3,4)
+    flank_5, mid_before, mid_after, flank_3 = str.upcase.match(/^([ACGT])\[([ACGT])\/([ACGT])\]([ACGT])$/i).values_at(1,2,3,4).map{|nuc| Nucleotides.index(nuc) }
     self.new(flank_5, mid_before, flank_3, mid_after)
-  end
-
-  def before
-    "#{flank_5}#{mid_before}#{flank_3}"
-  end
-
-  def after
-    "#{flank_5}#{mid_after}#{flank_3}"
   end
 
   def revcomp
@@ -21,7 +13,7 @@ SNVContext = Struct.new(:flank_5, :mid_before, :flank_3, :mid_after) do
   end
 
   def to_s
-    "#{flank_5}[#{mid_before}/#{mid_after}]#{flank_3}"
+    "#{Nucleotides[flank_5]}[#{Nucleotides[mid_before]}/#{Nucleotides[mid_after]}]#{Nucleotides[flank_3]}"
   end
   alias_method :inspect, :to_s
 end

@@ -6,7 +6,7 @@ class MutationProcess
   end
   
   def mutation_rate_from_to(orig_ctx_indices, final_nuc_idx)
-    substitution = SNVContext.new( *Nucleotides.values_at(*orig_ctx_indices, final_nuc_idx) )
+    substitution = SNVContext.new(*orig_ctx_indices, final_nuc_idx)
     @mut_rates_by_ctx[substitution]
   end
 
