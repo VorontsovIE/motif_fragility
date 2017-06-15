@@ -11,15 +11,18 @@ class PPM
   def context_probability_at_pos(ctx_nuc_indices, position)
     raise 'Position out of range'  unless (position - 1 >= 0) && (position + 1 < length)
     raise 'Wrong context'  unless ctx_nuc_indices.length == 3
-    ((position - 1) .. (position + 1)).zip(ctx_nuc_indices).map{|pos, nuc_at_pos|
-      matrix[pos][nuc_at_pos]
-    }.inject(1.0, &:*)
+    alpha, beta, gamma = *ctx_nuc_indices
+    matrix[position - 1][alpha] * matrix[position][beta] * matrix[position + 1][gamma]
   end
 
   def context_probability(ctx_nuc_indices)
-    (1 ... (length - 1)).map{|pos|
-      context_probability_at_pos(ctx_nuc_indices, pos)
-    }.inject(0.0, &:+)
+    @context_probability_cache ||= {}
+    @context_probability_cache[ctx_nuc_indices] ||= begin
+      (1 ... (length - 1)).map{|pos|
+        context_probability_at_pos(ctx_nuc_indices, pos)
+      }.inject(0.0, &:+)
+    end
+    @context_probability_cache[ctx_nuc_indices]
   end
 
   def expand_flanks(flank_length)
