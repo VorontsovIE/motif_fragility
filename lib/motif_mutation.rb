@@ -11,15 +11,15 @@ class MotifMutation
   def mutation_gradient_at(pos, delta)
     Nucleotides.each_index.map{|alpha|
       Nucleotides.each_index.map{|gamma|
-        sum_mut_rate_alpha_delta_gamma = mut_process.mutation_rate_from_to_any([alpha, delta, gamma])
-        alpha_delta_gamma_at_pos = ppm.context_probability_at_pos([alpha, delta, gamma], pos)
-        alpha_delta_gamma = ppm.context_probability([alpha, delta, gamma])
+        sum_mut_rate_alpha_delta_gamma = mut_process.mutation_rate_from_to_any(alpha, delta, gamma)
+        alpha_delta_gamma_at_pos = ppm.context_probability_at_pos(alpha, delta, gamma, pos)
+        alpha_delta_gamma = ppm.context_probability(alpha, delta, gamma)
         
         # alpha-beta-gamma for all beta --> alpha-delta-gamma
         incoming = Nucleotides.each_index.map{|beta|
-          mut_rate_alpha_beta_gamma_to_delta = mut_process.mutation_rate_from_to([alpha, beta, gamma], delta)
-          alpha_beta_gamma_at_pos = ppm.context_probability_at_pos([alpha, beta, gamma], pos)
-          alpha_beta_gamma = ppm.context_probability([alpha, beta, gamma])
+          mut_rate_alpha_beta_gamma_to_delta = mut_process.mutation_rate_from_to(alpha, beta, gamma, delta)
+          alpha_beta_gamma_at_pos = ppm.context_probability_at_pos(alpha, beta, gamma, pos)
+          alpha_beta_gamma = ppm.context_probability(alpha, beta, gamma)
 
           alpha_beta_gamma_at_pos * mut_rate_alpha_beta_gamma_to_delta * (alpha_beta_gamma_at_pos / alpha_beta_gamma)
         }.inject(0.0, &:+)

@@ -5,15 +5,12 @@ class MutationProcess
     @mut_rates_by_ctx = mut_rates_by_ctx
   end
   
-  def mutation_rate_from_to(orig_ctx_indices, final_nuc_idx)
-    substitution = SNVContext.new(*orig_ctx_indices, final_nuc_idx)
-    @mut_rates_by_ctx[substitution]
+  def mutation_rate_from_to(alpha, beta, gamma, delta)
+    @mut_rates_by_ctx[alpha][beta][gamma][delta]
   end
 
-  def mutation_rate_from_to_any(orig_ctx_indices)
-    Nucleotides.each_index.map{|ksi|
-      mutation_rate_from_to(orig_ctx_indices, ksi)
-    }.inject(0.0, &:+)
+  def mutation_rate_from_to_any(alpha, beta, gamma)
+    @mut_rates_by_ctx[alpha][beta][gamma].each_value.inject(0.0, &:+)
   end
 
   def self.from_file(filename)
@@ -31,11 +28,20 @@ class MutationProcess
 
   def self.normalize_context_counts(context_counts)
     sum = 2 * context_counts.values.inject(0.0, &:+)
+    result = Hash.new{|ha, a|
+      ha[a] = Hash.new{|hb, b|
+        hb[b] = Hash.new {|hg, g|
+          hg[g] = Hash.new(0)
+        }
+      }
+    }
     context_counts.each_with_object(Hash.new(0)){|(ctx, cnt), result|
       result[ctx] += cnt
       result[ctx.revcomp] += cnt
-    }.each_with_object(Hash.new(0)){|(ctx, cnt), result|
-      result[ctx] = cnt / sum
+    }.each{|ctx, cnt|
+      alpha, beta, gamma, delta = *ctx.values
+      result[alpha][beta][gamma][delta] = cnt / sum
     }
+    result
   end
 end
