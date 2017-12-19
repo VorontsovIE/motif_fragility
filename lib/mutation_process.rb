@@ -1,6 +1,7 @@
 require_relative 'snv_context'
 
 class MutationProcess
+  attr_reader :mut_rates_by_ctx
   def initialize(mut_rates_by_ctx)
     @mut_rates_by_ctx = mut_rates_by_ctx
   end
@@ -26,15 +27,19 @@ class MutationProcess
     }
   end
 
-  def self.normalize_context_counts(context_counts)
-    sum = 2 * context_counts.values.inject(0.0, &:+)
-    result = Hash.new{|ha, a|
+  def self.empty_mutation_in_context_hsh
+    Hash.new{|ha, a|
       ha[a] = Hash.new{|hb, b|
         hb[b] = Hash.new {|hg, g|
           hg[g] = Hash.new(0)
         }
       }
     }
+  end
+
+  def self.normalize_context_counts(context_counts)
+    sum = 2 * context_counts.values.inject(0.0, &:+)
+    result = empty_mutation_in_context_hsh
     context_counts.each_with_object(Hash.new(0)){|(ctx, cnt), result|
       result[ctx] += cnt
       result[ctx.revcomp] += cnt

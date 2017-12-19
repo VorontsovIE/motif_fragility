@@ -3,8 +3,6 @@ require_relative 'lib/ppm'
 require_relative 'lib/mutation_process'
 require_relative 'lib/motif_mutation'
 
-Nucleotides = %w[A C G T]
-
 raise 'Specify PCM file'  unless pcm_fn = ARGV[0]
 raise 'Specify mutational context counts'  unless mutational_ctx_fn = ARGV[1]
 raise 'Specify flank expansion length'  unless flank_expansion = ARGV[2]

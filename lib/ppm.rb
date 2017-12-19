@@ -26,7 +26,7 @@ class PPM
     matrix[position - 1][alpha] * matrix[position][beta] * matrix[position + 1][gamma]
   end
 
-  def context_probability(alpha, beta, gamma)
+  def context_probabilities
     @context_probability_cache ||= Hash.new{|ha, a|
       ha[a] = Hash.new{|hb, b|
         hb[b] = Hash.new{|hg, g|
@@ -34,7 +34,10 @@ class PPM
         }
       }
     }
-    @context_probability_cache[alpha][beta][gamma]
+  end
+
+  def context_probability(alpha, beta, gamma)
+    context_probabilities[alpha][beta][gamma]
   end
 
   def context_probability_calculate(alpha, beta, gamma)

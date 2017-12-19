@@ -1,3 +1,5 @@
+Nucleotides = %w[A C G T]
+
 def complement(nuc_idx)
   3 - nuc_idx
 end
