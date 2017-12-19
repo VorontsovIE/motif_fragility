@@ -1,13 +1,58 @@
 NUCS = %w[A C G T N]
 NucToIdx = {'A'=>0, 'C'=>1, 'G'=>2, 'T'=>3, 'N'=>4, 'a'=>0,'c'=>1,'g'=>2,'t'=>3,'n'=>4}
 
+class ChromosomesFromFasta
+  def initialize(filename, chrom_names)
+    @filename = filename
+    @chrom_names = chrom_names
+  end
+
+  def each(&block)
+    return enum_for(:each)  unless block_given?
+    chr = nil
+    seqs = []
+    File.open(@filename) do |f|
+      f.each_line{|l|
+        if l.start_with? '>'
+          yield chr, seqs.join  if @chrom_names.include?(chr)
+          seqs = []
+          chr = l[1..-1].strip
+        else
+          seqs << l.strip
+        end
+      }
+      yield chr, seqs.join  if @chrom_names.include?(chr)
+    end
+  end
+end
+
+class ChromosomesFromPlainFiles
+  def initialize(folder, chrom_names)
+    @folder = folder
+    @chrom_names = chrom_names
+  end
+
+  def each(&block)
+    return enum_for(:each)  unless block_given?
+    @chrom_names.each{|chr|
+      yield chr, File.read(File.join(@folder, "#{chr}.plain"))
+    }
+  end
+end
+
+
 hsh = Hash.new(0)
-# chromosomes = ((1..22).to_a + ['X', 'Y']).map{|chr_num| "chr#{chr_num}"} ## human
-chromosomes = ((1..19).to_a + ['X', 'Y']).map{|chr_num| "chr#{chr_num}"} ## mouse
-chromosomes.each do |chr|
+human_chromosomes = (1..22).map(&:to_s) + ['X', 'Y']
+mouse_chromosomes = (1..19).map(&:to_s) + ['X', 'Y']
+human_chromosome_names = human_chromosomes.map{|chr_num| "chr#{chr_num}"}
+mouse_chromosome_names = mouse_chromosomes.map{|chr_num| "chr#{chr_num}"}
+# chromosome_reader = ChromosomesFromPlainFiles.new('/home/ilya/iogen/genome/mm9/', mouse_chromosome_names)
+# chromosome_reader = ChromosomesFromPlainFiles.new('/home/ilya/iogen/genome/mm10/', mouse_chromosome_names)
+chromosome_reader = ChromosomesFromPlainFiles.new('/home/ilya/iogen/genome/hg19/', human_chromosome_names)
+# chromosome_reader = ChromosomesFromFasta.new('/home/ilya/genome/human/hg38.fa', human_chromosome_names)
+chromosome_reader.each do |chr, seq|
+# chromosomes.each do |chr|
   $stderr.puts(chr)
-  # seq = File.read("/home/ilya/iogen/genome/hg19/#{chr}.plain") ## human
-  seq = File.read("/home/ilya/iogen/genome/mm10/#{chr}.plain")  ## mouse
   seq_idx = seq.each_char.lazy.map{|ch| NucToIdx[ch] }
   idx = 0
 
