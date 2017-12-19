@@ -27,6 +27,25 @@ class MutationProcess
     }
   end
 
+  # reduce original distribution on whole genome to a motif-specific ensemble of site with different context distribution
+  def renormalize_at_reduced_set(total_ctx_freqs, reduced_ctx_freqs)
+    # total_ctx_freqs = ContextDistribution.as_nested_indexed_hash( total_ctx_freqs.frequencies )
+    # reduced_ctx_freqs = ContextDistribution.as_nested_indexed_hash( reduced_ctx_freqs.frequencies )
+
+    unnormed_result = MutationProcess.empty_mutation_in_context_hsh
+    sum = 0.0
+    ((0...4).to_a).repeated_permutation(4){|a,b,g,d|
+      unnormed_result[a][b][g][d] = mutation_rate_from_to(a, b, g, d) * reduced_ctx_freqs[a][b][g] / total_ctx_freqs[a][b][g]
+      sum += unnormed_result[a][b][g][d]
+    }
+
+    result = MutationProcess.empty_mutation_in_context_hsh
+    ((0...4).to_a).repeated_permutation(4){|a,b,g,d|
+      result[a][b][g][d] = unnormed_result[a][b][g][d] / sum
+    }
+    MutationProcess.new(result)
+  end
+
   def self.empty_mutation_in_context_hsh
     Hash.new{|ha, a|
       ha[a] = Hash.new{|hb, b|
