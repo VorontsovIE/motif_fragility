@@ -21,14 +21,13 @@ class MotifMutation
           alpha_beta_gamma_at_pos = ppm.context_probability_at_pos(alpha, beta, gamma, pos)
           alpha_beta_gamma = ppm.context_probability(alpha, beta, gamma)
 
-          alpha_beta_gamma_at_pos * mut_rate_alpha_beta_gamma_to_delta * (alpha_beta_gamma_at_pos / alpha_beta_gamma)
+          (alpha_beta_gamma == 0) ? 0 :  mut_rate_alpha_beta_gamma_to_delta * (alpha_beta_gamma_at_pos ** 2) / alpha_beta_gamma
         }.inject(0.0, &:+)
 
         # alpha-delta-gamma for all ksi --> alpha-ksi-gamma
-        outgoing = alpha_delta_gamma_at_pos * sum_mut_rate_alpha_delta_gamma * (alpha_delta_gamma_at_pos / alpha_delta_gamma)
-
-        incoming - outgoing
+        outgoing = (alpha_delta_gamma == 0) ? 0 :  sum_mut_rate_alpha_delta_gamma * (alpha_delta_gamma_at_pos ** 2) / alpha_delta_gamma
         
+        incoming - outgoing
       }.inject(0.0, &:+)
     }.inject(0.0, &:+)
   end
