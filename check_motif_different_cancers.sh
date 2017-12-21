@@ -1,11 +1,10 @@
 MOTIF_PCM=$1
-EXPANSION_LENGTH=$2
 find mutational_signatures/ -xtype f \
   | xargs -n1 -I{} basename -s '.tsv' "{}" | sort \
   | xargs -n1 -I{} echo \
       "echo -n {} $'\t' ;" \
       "java -cp ape.jar ru.autosome.macroape.EvalSimilarity $MOTIF_PCM " \
-                        " <( ruby mutated_motif.rb $MOTIF_PCM 'mutational_signatures/{}.tsv' $EXPANSION_LENGTH ) " \
+                        " <( ruby mutate_motif.rb $MOTIF_PCM 'mutational_signatures/{}.tsv' genomic_contexts/hg38_contexts.tsv --flank-length 1 ) " \
                         " --first-pcm --second-pcm --position 0,direct -d 100 " \
       " | grep -Pe '^S\b' | cut -f2" \
   | bash
