@@ -52,12 +52,18 @@ class ContextDistribution
   end
   alias_method :inspect, :to_s
 
-  def self.as_nested_indexed_hash(hsh)
-    result = Hash.new{|ha, a|
-      ha[a] = Hash.new{|hb, b|
-        hb[b] = Hash.new(0)
+  def self.empty_context_hsh
+    (0...4).each_with_object(Hash.new){|a, h1|
+      h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
+        h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
+          h3[g] = 0
+        }
       }
     }
+  end
+
+  def self.as_nested_indexed_hash(hsh)
+    result = empty_context_hsh
     hsh.each{|ctx, cnt|
       a,b,g = ctx.chars.map{|ch| Nucleotides.index(ch) }
       result[a][b][g] = cnt

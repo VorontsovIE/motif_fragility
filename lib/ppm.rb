@@ -9,11 +9,11 @@ class PPM
   end
 
   def context_probability_at_pos(alpha, beta, gamma, position)
-    @context_probability_at_pos_cache ||= Hash.new{|ha, a|
-      ha[a] = Hash.new{|hb, b|
-        hb[b] = Hash.new{|hg, g|
-          hg[g] = Hash.new{|hpos, pos|
-            hpos[pos] = context_probability_at_pos_calculate(a, b, g, pos)
+    @context_probability_at_pos_cache ||= (0...4).each_with_object(Hash.new){|a, h1|
+      h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
+        h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
+          h3[g] = (1 ... (length - 1)).each_with_object(Hash.new){|pos, h4|
+            h4[pos] = context_probability_at_pos_calculate(a, b, g, pos)
           }
         }
       }
@@ -27,10 +27,10 @@ class PPM
   end
 
   def context_probabilities
-    @context_probability_cache ||= Hash.new{|ha, a|
-      ha[a] = Hash.new{|hb, b|
-        hb[b] = Hash.new{|hg, g|
-          hg[g] = context_probability_calculate(a, b, g)
+    @context_probability_cache ||= (0...4).each_with_object(Hash.new){|a, h1|
+      h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
+        h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
+          h3[g] = context_probability_calculate(a, b, g)
         }
       }
     }

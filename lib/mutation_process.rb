@@ -47,10 +47,12 @@ class MutationProcess
   end
 
   def self.empty_mutation_in_context_hsh
-    Hash.new{|ha, a|
-      ha[a] = Hash.new{|hb, b|
-        hb[b] = Hash.new {|hg, g|
-          hg[g] = Hash.new(0)
+    (0...4).each_with_object(Hash.new){|a, h1|
+      h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
+        h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
+          h3[g] = (0...4).each_with_object(Hash.new){|d, h4|
+            h4[d] = 0
+          }
         }
       }
     }
