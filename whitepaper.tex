@@ -84,12 +84,20 @@ $$\Delta M^i_{\delta}/\rho = \sum_{\alpha,\gamma}\left(\sum_{\beta}\frac{\left(M
 
 Кроме того, стоит понять, не размывает ли добавление к мотиву фланок понятие интенсивности мутационного процесса $\rho$. Кажется, что нет: $\rho=1$ отвечает фактически ситуации, когда на каждый из $4^n$ сайтов приходится в среднем по одной мутации (но размазывается это общее количество по всему ансамблю, так что могут быть сайты, не имеющие мутации).
 
-В качестве альтернативного варианта, можно конвертировать полногеномное распределение мутаций ${}^{\textrm{wg}}\rho_{\alpha\beta\gamma}^{\delta}$ в сайт-специфическое распределение мутаций ${}^{\textrm{ss}}\rho_{\alpha\beta\gamma}^{\delta}$. Обозначим число тринуклеотидов в сайтах как ${}^{\textrm{ss}}N$, в полном геноме как ${}^{\textrm{wg}}N$. Для частот тринуклеотидов воспользуемся ${}^{\textrm{ss}}M_{\alpha\beta\gamma}$ и ${}^{\textrm{wg}}M_{\alpha\beta\gamma}$.
+В качестве альтернативного варианта, можно конвертировать полногеномное распределение мутаций ${}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta}$ в сайт-специфическое распределение мутаций ${}^{\textrm{ss}}f_{\alpha\beta\gamma}^{\delta}$. Обозначим число тринуклеотидов в сайтах как ${}^{\textrm{ss}}N$, в полном геноме как ${}^{\textrm{wg}}N$. Для частот тринуклеотидов воспользуемся ${}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}$ и ${}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}$.
+
+$$\widetilde{M}_{\alpha\beta\gamma} = \frac{M_{\alpha\beta\gamma}}{\sum_{\alpha,\beta,\gamma}M_{\alpha\beta\gamma}}$$
 
 Тогда можно выразить частоту попаданий мутации определенного типа в сайт следующим образом:
-$${}^{\textrm{ss}}\rho_{\alpha\beta\gamma}^{\delta} = {}^{\textrm{wg}}\rho_{\alpha\beta\gamma}^{\delta} \frac{{}^{\textrm{ss}}N \cdot {}^{\textrm{ss}}M_{\alpha\beta\gamma}}{{}^{\textrm{wg}}N \cdot {}^{\textrm{wg}}M_{\alpha\beta\gamma}} = J\cdot{}^{\textrm{wg}}\rho_{\alpha\beta\gamma}^{\delta} \frac{{}^{\textrm{ss}}M_{\alpha\beta\gamma}}{{}^{\textrm{wg}}M_{\alpha\beta\gamma}},$$
-где $J$ - нормировочная константа.
-$$J^{-1} = \sum_{\alpha,\beta,\gamma,\delta}{}^{\textrm{wg}}\rho_{\alpha\beta\gamma}^{\delta} \frac{{}^{\textrm{ss}}M_{\alpha\beta\gamma}}{{}^{\textrm{wg}}M_{\alpha\beta\gamma}} = \sum_{\alpha,\beta,\gamma}\left(\frac{{}^{\textrm{ss}}M_{\alpha\beta\gamma}}{{}^{\textrm{wg}}M_{\alpha\beta\gamma}}\sum_{\delta}{}^{\textrm{wg}}\rho_{\alpha\beta\gamma}^{\delta}\right)$$
+$$P_0\cdot{}^{\textrm{ss}}f_{\alpha\beta\gamma}^{\delta} = {}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \cdot \frac{{}^{\textrm{ss}}N \cdot {}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}N \cdot {}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}} = J\cdot{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \cdot\frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}},$$
+$${}^{\textrm{ss}}f_{\alpha\beta\gamma}^{\delta} = \frac{J}{P_0}\cdot{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \cdot\frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}},$$
+где $P_0$ -- вероятность мутации попасть в сайт (при условии, что мутация случилась), а $J={}^{ss}N / {}^{wg}N$ -- доля генома, которую занимают сайты.
+
+Из условия нормировки
+$$\sum_{\alpha,\beta,\gamma,\delta}{}^{\textrm{ss}}f_{\alpha\beta\gamma}^{\delta} = 1$$ можно вычислить значение нормировочного множителя
+$$\left(\frac{J}{P_0}\right)^{-1} = \sum_{\alpha,\beta,\gamma,\delta}{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}} = \sum_{\alpha,\beta,\gamma}\left(\frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}}\sum_{\delta}{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta}\right)$$
+
+Отсюда, зная долю генома, покрытую сайтами, $J$ можно вычислить также вероятность мутации попасть в сайт $P_0$. Этой оценкой вероятности можно пользоваться при оценке правдоподобия доли попавших в сайт мутаций (которое моделируется биномиальным распределением).
 
 Ruby-cкрипт, применяющий мутационный процесс к частотной матрице вместе с тестовыми примерами можно найти в репозитории \url{https://github.com/VorontsovIE/motif_fragility}
 \end{document}
