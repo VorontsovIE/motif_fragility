@@ -15,7 +15,12 @@ ppm = pcm.to_ppm
 genomic_contexts = ContextDistribution.from_file(genomic_contexts_fn).without_unknown.symmetrized
 genomic_context_frequencies = ContextDistribution.as_nested_indexed_hash(genomic_contexts.frequencies)
 
-motif_context_frequencies = ppm.context_probabilities
+motif_context_frequencies = ppm.mean_context_probabilities
+
+if ARGV.delete('--report-site-exposure')
+  puts mutation_contexts.site_exposure(genomic_context_frequencies, motif_context_frequencies)
+  exit
+end
 
 renormed_mutation_contexts = mutation_contexts.renormalize_at_reduced_set(genomic_context_frequencies, motif_context_frequencies)
 
