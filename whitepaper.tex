@@ -5,6 +5,26 @@
 \usepackage[russian,english]{babel}
 \usepackage{amsmath, amsthm, amssymb, amsfonts}
 \usepackage{url}
+\usepackage{empheq}
+ 
+% Command "alignedbox{}{}" for a box within an align environment
+% Source: http://www.latex-community.org/forum/viewtopic.php?f=46&t=8144
+\newlength\dlf  % Define a new measure, dlf
+\newcommand\alignedbox[2]{
+% Argument #1 = before & if there were no box (lhs)
+% Argument #2 = after & if there were no box (rhs)
+&  % Alignment sign of the line
+{
+\settowidth\dlf{$\displaystyle #1$}  
+    % The width of \dlf is the width of the lhs, with a displaystyle font
+\addtolength\dlf{\fboxsep+\fboxrule}  
+    % Add to it the distance to the box, and the width of the line of the box
+\hspace{-\dlf}  
+    % Move everything dlf units to the left, so that & #1 #2 is aligned under #1 & #2
+\boxed{#1 #2}
+    % Put a box around lhs and rhs
+}
+}
 
 \begin{document}
 \title{Хрупкость мотива по отношению к мутационному процессу}
@@ -16,7 +36,11 @@
 Фактически, матрица частот описывает всё множество сайтов и показывает, какой сайт там встречается с какой частотой.
 
 Введём также вероятность того, что тринуклеотидный контекст позиции $i$ в сайте будет $\alpha\beta\gamma$:
-$$M^i_{\alpha\beta\gamma} = M^{i-1}_{\alpha}M^i_{\beta}M^{i+1}_{\gamma}$$
+\begin{equation*}
+M^i_{\alpha\beta\gamma} = M^{i-1}_{\alpha}M^i_{\beta}M^{i+1}_{\gamma}
+\end{equation*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Мутационный процесс}
 В нашей модели мутационный процесс $f_{\alpha\beta\gamma}^{\delta}$ задаётся мутационной подписью, т.е. распределением частот тринуклеотидных мутаций $\alpha\beta\gamma\to\alpha\delta\gamma$ (или кратко $\alpha\beta\gamma\to\delta$).
@@ -29,7 +53,11 @@ $$f_{\alpha\beta\gamma}^{\delta} = f_{\gamma'\beta'\alpha'}^{\delta'},$$
 где $\alpha'$ - это нуклеотид, комплиментарный $\alpha$.
 
 Мутационный процесс задаёт частоты, следовательно суммируется к единице:
-$$\sum_{\alpha,\beta,\gamma,\delta} f_{\alpha\beta\gamma}^{\delta} = 1$$
+\begin{equation*}
+\sum_{\alpha,\beta,\gamma,\delta} f_{\alpha\beta\gamma}^{\delta} = 1
+\end{equation*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Действие мутационного процесса на ансамбль сайтов, характеризуемый мотивом}
 Чтобы оценить влияние мутационного процесса на ансабль сайтов, мы построим (тоже в форме частотной матрицы) множество сайтов, каким оно будет при условии, что на исходное множество сайтов подействовал мутационный процесс. При этом мутации, внесенные в ансамбль, будут так распределены между различными позициями различных вариаций сайта, чтобы частоты тринуклеотидов были такими, как задаёт их мутационная подпись. 
@@ -51,30 +79,44 @@ $$\sum_{\alpha,\beta,\gamma,\delta} f_{\alpha\beta\gamma}^{\delta} = 1$$
 \end{itemize}
 
 Для удобства мы обозначили сумму вероятностей встретить тринуклеотид $\alpha\beta\gamma$ на разных позициях сайта:
-$$M_{\alpha\beta\gamma} = \sum_i M^i_{\alpha\beta\gamma}$$
+\begin{equation*}
+M_{\alpha\beta\gamma} = \sum_i M^i_{\alpha\beta\gamma}
+\end{equation*}
 Стоит отметить, что эта величина не является суммарной вероятностью встретить этот тринуклеотид на любой из позиций (более того, это вообще не вероятность; например, она может принимать значение больше единицы). Эта величина играет роль нормировочного множителя в ситуации, когда мутация ``выбирает'', какую позицию сайта она заденет.
 
 Вычислим теперь вероятность получить нуклеотид $\delta$ в модели нового множества сайтов на $i$-ой позиции. Во-первых, выразим её как сумму вероятностей получить определенный контекст:
-$$\widetilde{M}^i_{\delta} = \sum_{\alpha,\gamma}\widetilde{M}^i_{\alpha\delta\gamma}$$
+\begin{equation*}
+\widetilde{M}^i_{\delta} = \sum_{\alpha,\gamma}\widetilde{M}^i_{\alpha\delta\gamma}
+\end{equation*}
 
-Далее, вероятность получить нуклеотид $\delta$ складывается из вероятности того, что нуклеотид исходно был $\delta$ и не мутировал, а также вероятности того, что нуклеотид был неким $\beta$, но стал $\delta$. При этом мутация меняет позицию, если она попала в сайт (с вероятностью $\rho$), притом контекст мутации совпал с контекстом нуклеотида в сайте и эта мутация из всех мест с таким контекстом попала именно в нужную позицию. Не меняет позицию, соответственно, во всех других случаях.
+Далее, вероятность получить нуклеотид $\delta$ складывается из вероятности того, что нуклеотид исходно был $\delta$ и не мутировал, а также вероятности того, что нуклеотид был неким $\beta$, но стал $\delta$. При этом мутация меняет позицию, если она попала в сайт (с вероятностью $\rho$), из всех мест с таким контекстом в ансамбле сайтов она попала именно в нужную позицию. Мутация не меняет позицию, соответственно, во всех других случаях.
 
 Изменения фланкирующих нуклеотидов не играют роли при вычислении частоты встречаемости центрального нуклеотида, поскольку это лишь перераспределит вероятности получить различные контексты нуклеотида $\delta$. Сумма частот контекстов с фиксированным центром не изменится.
 
-$$\widetilde{M}^i_{\alpha\delta\gamma} = \rho\sum_{\beta}M^i_{\alpha\beta\gamma}f_{\alpha\beta\gamma}^{\delta}\frac{M^i_{\alpha\beta\gamma}}{M_{\alpha\beta\gamma}} + M^i_{\alpha\delta\gamma}\left(1 - \rho\sum_{\xi}f_{\alpha\delta\gamma}^{\xi}\frac{M^i_{\alpha\delta\gamma}}{M_{\alpha\delta\gamma}}\right)$$
+\begin{equation}
+\widetilde{M}^i_{\alpha\delta\gamma} = \rho\sum_{\beta}f_{\alpha\beta\gamma}^{\delta}\frac{M^i_{\alpha\beta\gamma}}{M_{\alpha\beta\gamma}} + \left(1 - \rho\sum_{\xi}f_{\alpha\delta\gamma}^{\xi}\frac{M^i_{\alpha\delta\gamma}}{M_{\alpha\delta\gamma}}\right)
+\end{equation}
 
-$$\Delta M^i_{\alpha\delta\gamma} = \widetilde{M}^i_{\alpha\delta\gamma} - M^i_{\alpha\delta\gamma}$$
+\begin{equation*}
+\Delta M^i_{\alpha\delta\gamma} = \widetilde{M}^i_{\alpha\delta\gamma} - M^i_{\alpha\delta\gamma}; \quad\Delta M^i_{\delta} = \widetilde{M}^i_{\delta} - M^i_{\delta} = \sum_{\alpha,\gamma}\Delta M^i_{\alpha\delta\gamma}
+\end{equation*}
 
-$$\Delta M^i_{\alpha\delta\gamma}/\rho = \sum_{\beta}M^i_{\alpha\beta\gamma}f_{\alpha\beta\gamma}^{\delta}\frac{M^i_{\alpha\beta\gamma}}{M_{\alpha\beta\gamma}} - M^i_{\alpha\delta\gamma}\sum_{\xi}f_{\alpha\delta\gamma}^{\xi}\frac{M^i_{\alpha\delta\gamma}}{M_{\alpha\delta\gamma}}$$
+\begin{equation*}
+\Delta M^i_{\alpha\delta\gamma}/\rho = \sum_{\beta}f_{\alpha\beta\gamma}^{\delta}\frac{M^i_{\alpha\beta\gamma}}{M_{\alpha\beta\gamma}} - \sum_{\xi}f_{\alpha\delta\gamma}^{\xi}\frac{M^i_{\alpha\delta\gamma}}{M_{\alpha\delta\gamma}}
+\end{equation*}
+\begin{equation*}
+\Delta M^i_{\alpha\delta\gamma}/\rho = \sum_{\beta}f_{\alpha\beta\gamma}^{\delta}\frac{M^i_{\alpha\beta\gamma}}{M_{\alpha\beta\gamma}} - \frac{M^i_{\alpha\delta\gamma}}{M_{\alpha\delta\gamma}}\sum_{\xi}f_{\alpha\delta\gamma}^{\xi}
+\end{equation*}
 
-$$\Delta M^i_{\delta} = \widetilde{M}^i_{\delta} - M^i_{\delta} = \sum_{\alpha,\gamma}\Delta M^i_{\alpha\delta\gamma}$$
-
-$$\Delta M^i_{\delta}/\rho = \sum_{\alpha,\gamma}\left(\sum_{\beta}M^i_{\alpha\beta\gamma}f_{\alpha\beta\gamma}^{\delta}\frac{M^i_{\alpha\beta\gamma}}{M_{\alpha\beta\gamma}} - M^i_{\alpha\delta\gamma}\sum_{\xi}f_{\alpha\delta\gamma}^{\xi}\frac{M^i_{\alpha\delta\gamma}}{M_{\alpha\delta\gamma}}\right)$$
-
-$$\Delta M^i_{\delta}/\rho = \sum_{\alpha,\gamma}\left(\sum_{\beta}\frac{\left(M^i_{\alpha\beta\gamma}\right)^2}{M_{\alpha\beta\gamma}}f_{\alpha\beta\gamma}^{\delta} - \frac{\left(M^i_{\alpha\delta\gamma}\right)^2}{M_{\alpha\delta\gamma}}\sum_{\xi}f_{\alpha\delta\gamma}^{\xi}\right)$$
-
+\begin{equation}
+\boxed{
+\Delta M^i_{\delta}/\rho = \sum_{\alpha,\gamma}\left(\sum_{\beta}\frac{M^i_{\alpha\beta\gamma}}{M_{\alpha\beta\gamma}}f_{\alpha\beta\gamma}^{\delta} - \frac{M^i_{\alpha\delta\gamma}}{M_{\alpha\delta\gamma}}\sum_{\xi}f_{\alpha\delta\gamma}^{\xi}\right)
+}
+\end{equation}
 
 Мы вычислили, в какую сторону и насколько сильно мутационный процесс будет перетягивать ансамбль сайтов. Если мы зафиксируем интенсивность мутационного процесса, положив $\rho=1$, мы можем применить метрики схожести мотивов для оценки того, насколько новое множество сайтов отличается от старого. Например, при помощи macro-ape мы можем вычислить Джаккарову похожесть множеств топовых слов. Это будет некая характеристика прочности (хрупкости) мотива против данной мутационной подписи.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Коррекция мутационной подписи}
 
@@ -91,13 +133,25 @@ $$\widetilde{M}_{\alpha\beta\gamma} = \frac{M_{\alpha\beta\gamma}}{\sum_{\alpha,
 Мы предполагаем, что вероятность позиции мутировать зависит только от контекста, т.е. все позиции с одинаковым контекстом мутируют равновероятно. В геноме, однако, существуют позиции с различной доступностью для мутационного процесса. В данной модели можно учесть это лишь грубо: считая частоты (и количества тринуклеотидов) не по полному геному, а по той его части, что доступна для мутаций, например, для открытого хроматина.
 
 Тогда можно выразить частоту попаданий мутации определенного типа в сайт следующим образом:
-$$P_0\cdot{}^{\textrm{ss}}f_{\alpha\beta\gamma}^{\delta} = {}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \cdot \frac{{}^{\textrm{ss}}N \cdot {}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}N \cdot {}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}} = J\cdot{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \cdot\frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}},$$
-$${}^{\textrm{ss}}f_{\alpha\beta\gamma}^{\delta} = \frac{J}{P_0}\cdot{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \cdot\frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}},$$
+\begin{equation*}
+P_0\cdot{}^{\textrm{ss}}f_{\alpha\beta\gamma}^{\delta} = {}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \cdot \frac{{}^{\textrm{ss}}N \cdot {}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}N \cdot {}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}} = J\cdot{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \cdot\frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}},
+\end{equation*}
+\begin{equation*}
+{}^{\textrm{ss}}f_{\alpha\beta\gamma}^{\delta} = \frac{J}{P_0}\cdot{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \cdot\frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}},
+\end{equation*}
 где $P_0$ -- вероятность мутации попасть в сайт (при условии, что мутация случилась), а $J={}^{ss}N / {}^{wg}N$ -- доля генома, которую занимают сайты.
 
 Из условия нормировки
-$$\sum_{\alpha,\beta,\gamma,\delta}{}^{\textrm{ss}}f_{\alpha\beta\gamma}^{\delta} = 1$$ можно вычислить значение нормировочного множителя
-$$\varkappa = \left(\frac{J}{P_0}\right)^{-1} = \sum_{\alpha,\beta,\gamma,\delta}{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}} = \sum_{\alpha,\beta,\gamma}\left(\frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}}\sum_{\delta}{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta}\right)$$
+\begin{equation*}
+\sum_{\alpha,\beta,\gamma,\delta}{}^{\textrm{ss}}f_{\alpha\beta\gamma}^{\delta} = 1
+\end{equation*}
+можно вычислить значение нормировочного множителя
+
+\begin{equation}
+\boxed{
+\varkappa = \left(\frac{J}{P_0}\right)^{-1} = \sum_{\alpha,\beta,\gamma,\delta}{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta} \frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}} = \sum_{\alpha,\beta,\gamma}\left(\frac{{}^{\textrm{ss}}\widetilde{M}_{\alpha\beta\gamma}}{{}^{\textrm{wg}}\widetilde{M}_{\alpha\beta\gamma}}\sum_{\delta}{}^{\textrm{wg}}f_{\alpha\beta\gamma}^{\delta}\right)
+}
+\end{equation}
 
 Отсюда, зная долю генома, покрытую сайтами, $J$ можно вычислить также вероятность мутации попасть в сайт $P_0$. Этой оценкой вероятности можно пользоваться при оценке правдоподобия доли попавших в сайт мутаций (которое моделируется биномиальным распределением).
 
