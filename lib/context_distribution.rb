@@ -70,4 +70,11 @@ class ContextDistribution
     }
     result
   end
+
+  def self.uniform
+    hsh = %w[A C G T].repeated_permutation(3).map{|chars|
+      [chars.join, 1.0 / (4**3)]
+    }.to_h
+    self.new(hsh)
+  end
 end

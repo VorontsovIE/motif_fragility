@@ -27,7 +27,7 @@ class MutationProcess
     }
   end
 
-  # probability to hit site divided by fraction of genome occupied by sites ($\varkappa = P_0 / J$ in terms of the paper)
+  # probability to hit site divided by a fraction of genome occupied by sites ($\varkappa = P_0 / J$ in terms of an old paper; Q in new terms)
   def site_exposure(total_ctx_freqs, reduced_ctx_freqs)
     ((0...4).to_a).repeated_permutation(3).map{|a,b,g|
       mutation_rate_from_to_any(a, b, g) * reduced_ctx_freqs[a][b][g] / total_ctx_freqs[a][b][g]
