@@ -6,6 +6,30 @@ class MutationProcess
     @mut_rates_by_ctx = mut_rates_by_ctx
   end
 
+  def each_directed_context(&block)
+    return enum_for(:each_directed_context)  unless block_given?
+    (0...4).each{|alpha|
+      (0...4).each{|beta|
+        (0...4).each{|gamma|
+          (0...4).each{|delta|
+            yield [alpha,beta,gamma, delta]
+          }
+        }
+      }
+    }
+  end
+
+  def each_context
+    return enum_for(:each_context)  unless block_given?
+    (0...4).each{|alpha|
+      (0...4).each{|beta|
+        (0...4).each{|gamma|
+          yield [alpha,beta,gamma]
+        }
+      }
+    }
+  end
+
   def mutation_rate_from_to(alpha, beta, gamma, delta)
     @mut_rates_by_ctx[alpha][beta][gamma][delta]
   end
@@ -13,6 +37,27 @@ class MutationProcess
   def mutation_rate_from_to_any(alpha, beta, gamma)
     @mut_rates_by_ctx[alpha][beta][gamma].each_value.inject(0.0, &:+)
   end
+
+  def site_exposure(ctx_distribution)
+    each_context.map{|alpha, beta, gamma|
+      mutation_rate_from_to_any(alpha, beta, gamma) * ctx_distribution[alpha][beta][gamma]
+    }.inject(0.0, &:+)
+  end
+end
+
+class MutationProcess
+  # attr_reader :mut_rates_by_ctx
+  # def initialize(mut_rates_by_ctx)
+  #   @mut_rates_by_ctx = mut_rates_by_ctx
+  # end
+
+  # def mutation_rate_from_to(alpha, beta, gamma, delta)
+  #   @mut_rates_by_ctx[alpha][beta][gamma][delta]
+  # end
+
+  # def mutation_rate_from_to_any(alpha, beta, gamma)
+  #   @mut_rates_by_ctx[alpha][beta][gamma].each_value.inject(0.0, &:+)
+  # end
 
   def self.from_file(filename)
     self.new(normalize_context_counts(read_mutational_profile(filename)))

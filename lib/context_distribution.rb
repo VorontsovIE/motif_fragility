@@ -36,6 +36,14 @@ class ContextDistribution
     ContextDistribution.new(new_count_distribution)
   end
 
+  def normalized_by(other_context_distribution)
+    new_count_distribution = Hash.new(0)
+    count_distribution.each{|ctx, cnt|
+      new_count_distribution[ctx] = cnt.to_f / other_context_distribution.count_distribution[ctx]
+    }
+    ContextDistribution.new(new_count_distribution)
+  end
+
   def frequencies
     @frequencies ||= begin
       sum_cnt = count_distribution.values.inject(0, &:+)

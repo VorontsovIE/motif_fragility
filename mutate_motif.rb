@@ -41,7 +41,7 @@ raise 'Specify genomic contexts'  unless genomic_contexts_fn = ARGV[2]
 
 raise 'Either site exposure of mean score change can be reported, not both'  if report_site_exposure && report_mean_score_change
 
-mutation_contexts = MutationProcess.from_file(mutational_ctx_fn) # already symmetrized
+mutation_counts = MutationProcess.from_file(mutational_ctx_fn) # already symmetrized
 pcm = PCM.from_file(pcm_fn)
 count = pcm.count  # we store count before adding pseudocount
 
@@ -54,9 +54,12 @@ if genomic_contexts_fn.downcase == 'uniform'
 else
   genomic_contexts = ContextDistribution.from_file(genomic_contexts_fn).without_unknown.symmetrized
 end
-genomic_context_frequencies = ContextDistribution.as_nested_indexed_hash(genomic_contexts.frequencies)
+mutation_rates = mutation_counts.normalized_by(genomic_contexts)
 
 motif_context_frequencies = ppm_expanded.mean_context_probabilities
+
+
+
 
 site_exposure = mutation_contexts.site_exposure(genomic_context_frequencies, motif_context_frequencies)
 if report_site_exposure
@@ -64,7 +67,7 @@ if report_site_exposure
   exit
 end
 
-renormed_mutation_contexts = mutation_contexts.renormalize_at_reduced_set(genomic_context_frequencies, motif_context_frequencies)
+# renormed_mutation_contexts = mutation_contexts.renormalize_at_reduced_set(genomic_context_frequencies, motif_context_frequencies)
 
 motif_mutation_process = MotifMutation.new(ppm_expanded, renormed_mutation_contexts)
 
