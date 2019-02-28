@@ -1,0 +1,57 @@
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage{lmodern}
+\usepackage[russian,english]{babel}
+\usepackage{amsmath, amsthm, amssymb, amsfonts}
+\usepackage{url}
+\usepackage{empheq}
+ 
+% Command "alignedbox{}{}" for a box within an align environment
+% Source: http://www.latex-community.org/forum/viewtopic.php?f=46&t=8144
+\newlength\dlf  % Define a new measure, dlf
+\newcommand\alignedbox[2]{
+% Argument #1 = before & if there were no box (lhs)
+% Argument #2 = after & if there were no box (rhs)
+&  % Alignment sign of the line
+{
+\settowidth\dlf{$\displaystyle #1$}  
+    % The width of \dlf is the width of the lhs, with a displaystyle font
+\addtolength\dlf{\fboxsep+\fboxrule}  
+    % Add to it the distance to the box, and the width of the line of the box
+\hspace{-\dlf}  
+    % Move everything dlf units to the left, so that & #1 #2 is aligned under #1 & #2
+\boxed{#1 #2}
+    % Put a box around lhs and rhs
+}
+}
+
+\begin{document}
+
+	\begin{equation*}
+	\mu_i(\alpha\beta\gamma) = \frac{PFM_i(\alpha\beta\gamma)}{\sum_j PFM_j(\alpha\beta\gamma)}
+	\end{equation*}
+	
+	\begin{equation*}
+	% \Delta PFM_i(\delta) = \rho\cdot\sum_{\alpha,\gamma}\left(\sum_{\beta}\mu_i(\alpha\beta\gamma)\cdot f(\alpha\beta\gamma \to \alpha\delta\gamma) - \mu_i(\alpha\delta\gamma)\cdot\sum_{\beta}f(\alpha\delta\gamma\ \to \alpha\beta\gamma)\right)
+	\Delta PFM_i(\delta) \sim \sum_{\alpha,\gamma}\left(\sum_{\beta}\frac{PFM_i(\alpha\beta\gamma)}{\sum_j PFM_j(\alpha\beta\gamma)}\cdot f(\alpha\beta\gamma \to \alpha\delta\gamma) - \frac{PFM_i(\alpha\delta\gamma)}{\sum_j PFM_j(\alpha\delta\gamma)}\cdot\sum_{\beta}f(\alpha\delta\gamma\ \to \alpha\beta\gamma)\right)
+	\end{equation*}
+
+	\begin{equation*}
+	PFM_i(\alpha\beta\gamma) = PFM_{i-1}(\alpha)\cdot PFM_{i}(\beta)\cdot PFM_{i+1}(\gamma)
+	\end{equation*}
+
+	\begin{equation*}
+	% F=\frac{\Delta\mathbb{E}_{word} PWM(word)}{\mathbb{E}_{word} PWM(word)} = \frac{\sum_{i,\delta} PWM_i(\delta)\cdot\Delta{PFM}_i(\delta)}{\sum_{i,\delta} PWM_i(\delta)\cdot PFM_i(\delta)}
+	\Delta\mathbb{E}_{word} PWM(word) = \sum_{i,\delta} PWM_i(\delta)\cdot\Delta{PFM}_i(\delta)
+	\end{equation*}
+
+
+	\begin{equation*}
+		% F = \frac{Pvalue(\mathbb{E}_{word\sim PPM}PWM(word))} {Pvalue(\mathbb{E}_{word\sim PPM'PWM(word))}
+		F = \log_{10}\frac{\mbox{P-value}(\mathbb{E}_{word\sim PFM}PWM(word))}{\mbox{P-value}(\mathbb{E}_{word\sim PFM'}PWM(word))}
+	\end{equation*}
+	\begin{equation*}
+		\mathbb{E}_{word\sim PFM} PWM(word) = \sum_{i,\delta} PWM_i(\delta)\cdot PFM_i(\delta)
+	\end{equation*}
+\end{document}
