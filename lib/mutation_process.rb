@@ -1,116 +1,104 @@
-require_relative 'snv_context'
+require_relative 'context'
+require_relative 'context_dependent_counts'
 
 class MutationProcess
-  attr_reader :mut_rates_by_ctx
-  def initialize(mut_rates_by_ctx)
-    @mut_rates_by_ctx = mut_rates_by_ctx
+  def initialize(mutation_counts, seq_context)
+    @mutation_counts = mutation_counts
+    @seq_context = seq_context
+    raise 'Empty counts distribution'  unless mutation_counts.total_counts > 0
   end
 
-  def each_directed_context(&block)
-    return enum_for(:each_directed_context)  unless block_given?
-    (0...4).each{|alpha|
-      (0...4).each{|beta|
-        (0...4).each{|gamma|
-          (0...4).each{|delta|
-            yield [alpha,beta,gamma, delta]
-          }
-        }
-      }
-    }
+  def symmetrized
+    MutationProcess.new(@mutation_counts.symmetrized, @seq_context.symmetrized)
   end
 
-  def each_context
-    return enum_for(:each_context)  unless block_given?
-    (0...4).each{|alpha|
-      (0...4).each{|beta|
-        (0...4).each{|gamma|
-          yield [alpha,beta,gamma]
-        }
-      }
-    }
+  def rate_from_to(directed_context)
+    @mutation_counts.frequencies[directed_context]
   end
 
-  def mutation_rate_from_to(alpha, beta, gamma, delta)
-    @mut_rates_by_ctx[alpha][beta][gamma][delta]
-  end
-
-  def mutation_rate_from_to_any(alpha, beta, gamma)
-    @mut_rates_by_ctx[alpha][beta][gamma].each_value.inject(0.0, &:+)
-  end
-
-  def site_exposure(ctx_distribution)
-    each_context.map{|alpha, beta, gamma|
-      mutation_rate_from_to_any(alpha, beta, gamma) * ctx_distribution[alpha][beta][gamma]
-    }.inject(0.0, &:+)
-  end
-end
-
-class MutationProcess
-  # attr_reader :mut_rates_by_ctx
-  # def initialize(mut_rates_by_ctx)
-  #   @mut_rates_by_ctx = mut_rates_by_ctx
-  # end
-
-  # def mutation_rate_from_to(alpha, beta, gamma, delta)
-  #   @mut_rates_by_ctx[alpha][beta][gamma][delta]
-  # end
-
-  # def mutation_rate_from_to_any(alpha, beta, gamma)
-  #   @mut_rates_by_ctx[alpha][beta][gamma].each_value.inject(0.0, &:+)
-  # end
-
-  def self.from_file(filename)
-    self.new(normalize_context_counts(read_mutational_profile(filename)))
-  end
-
-  def self.read_mutational_profile(filename)
-    File.readlines(filename).map{|l|
-      ctx, count = l.chomp.split("\t")
-      [SNVContext.from_string(ctx), count.to_f]
-    }.each_with_object(Hash.new(0)){|(ctx, cnt), result|
-      result[ctx] = cnt
-    }
-  end
-
-  # probability to hit site divided by a fraction of genome occupied by sites ($\varkappa = P_0 / J$ in terms of an old paper; Q in new terms)
-  def site_exposure(total_ctx_freqs, reduced_ctx_freqs)
-    ((0...4).to_a).repeated_permutation(3).map{|a,b,g|
-      mutation_rate_from_to_any(a, b, g) * reduced_ctx_freqs[a][b][g] / total_ctx_freqs[a][b][g]
+  def rate_from_to_any(context)
+    context.each_directed.map{|directed_context| 
+      @mutation_counts.frequencies[directed_context]
     }.inject(0.0, &:+)
   end
 
-  # reduce original distribution on whole genome to a motif-specific ensemble of site with different context distribution
-  def renormalize_at_reduced_set(total_ctx_freqs, reduced_ctx_freqs)
-    norm = 1.0 / site_exposure(total_ctx_freqs, reduced_ctx_freqs)
-    result = MutationProcess.empty_mutation_in_context_hsh
-    ((0...4).to_a).repeated_permutation(4){|a,b,g,d|
-      result[a][b][g][d] = norm * mutation_rate_from_to(a, b, g, d) * reduced_ctx_freqs[a][b][g] / total_ctx_freqs[a][b][g]
-    }
-    MutationProcess.new(result)
+  def direction_fraction(directed_context)
+    original_context = directed_context.original_context
+    sum = rate_from_to_any(original_context)
+    sum == 0 ? 0.25 : rate_from_to(directed_context).to_f / sum
   end
 
-  def self.empty_mutation_in_context_hsh
-    (0...4).each_with_object(Hash.new){|a, h1|
-      h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
-        h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
-          h3[g] = (0...4).each_with_object(Hash.new){|d, h4|
-            h4[d] = 0
-          }
-        }
+  # μ(ctx->ctx') = m(ctx->ctx') / N(ctx)
+  def densities
+    DirectedContext.each.map{|directed_ctx, cnt|
+      orig_ctx = directed_ctx.original_context
+      density = @mutation_counts[directed_ctx].to_f / @seq_context.count(orig_ctx)
+      [directed_ctx, density]
+    }.to_h
+  end
+
+  # μ(ctx->ctx') / (m/N)
+  def normalized_densities
+    @normalized_densities ||= begin
+      context_independent_density = @mutation_counts.total_counts / @seq_context.total_counts
+      densities.transform_values{|density|
+        density / context_independent_density
       }
+    end
+  end
+
+  def attractiveness(contexts_rs_frequencies)
+    DirectedContext.each.map{|directed_ctx|
+      orig_ctx = directed_ctx.original_context
+      normalized_densities[directed_ctx] * contexts_rs_frequencies[orig_ctx]
+    }.inject(0.0, &:+)
+  end
+  
+  def motif_attractiveness(ppm)
+    rs_frequencies = ppm.mean_context_distribution
+    attractiveness(rs_frequencies)
+  end
+
+  def unnormed_positional_frequency(ppm, pos, directed_ctx)
+    orig_ctx = directed_ctx.original_context
+    normalized_densities[directed_ctx] * ppm.context_frequency_at_pos(orig_ctx, pos)
+  end
+
+  def kappa(ppm)
+    inv_kappa = (0 ... ppm.length).map{|pos|
+      DirectedContext.each.map{|directed_ctx|
+        orig_ctx = directed_ctx.original_context
+        unnormed_positional_frequency(ppm, pos, directed_ctx)
+      }.sum
+    }.sum
+    1.0 / inv_kappa
+  end
+
+  def positional_profile(ppm)
+    ppm_kappa = kappa(ppm)
+    non_normalized_context_profile = (0 ... ppm.length).map{|pos|
+      DirectedContext.each.map{|directed_ctx|
+        unnormed_positional_frequency(ppm, pos, directed_ctx)
+      }.sum * ppm_kappa
     }
   end
 
-  def self.normalize_context_counts(context_counts)
-    sum = 2 * context_counts.values.inject(0.0, &:+)
-    result = empty_mutation_in_context_hsh
-    context_counts.each_with_object(Hash.new(0)){|(ctx, cnt), result|
-      result[ctx] += cnt
-      result[ctx.revcomp] += cnt
-    }.each{|ctx, cnt|
-      alpha, beta, gamma, delta = *ctx.values
-      result[alpha][beta][gamma][delta] = cnt / sum
-    }
-    result
+  def mean_weight_change(ppm, pwm)
+    ppm_kappa = kappa(ppm)
+    non_normalized_context_profile = (0 ... ppm.length).map{|pos|
+      val = DirectedContext.each.map{|directed_ctx|
+        unnormed_positional_frequency(ppm, pos, directed_ctx) * pwm.weight_delta(pos, directed_ctx.beta, directed_ctx.delta)
+      }.sum
+    }.sum * ppm_kappa
+  end
+
+  def weight_stddev(ppm, pwm)
+    ppm_kappa = kappa(ppm)
+    sqr_change = non_normalized_context_profile = (0 ... ppm.length).map{|pos|
+      val = DirectedContext.each.map{|directed_ctx|
+        unnormed_positional_frequency(ppm, pos, directed_ctx) * pwm.weight_delta(pos, directed_ctx.beta, directed_ctx.delta) ** 2
+      }.sum
+    }.sum * ppm_kappa
+    sqr_change ** 0.5
   end
 end

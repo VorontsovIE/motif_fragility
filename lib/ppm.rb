@@ -1,3 +1,5 @@
+require_relative 'context'
+
 class PPM
   attr_reader :matrix
   def initialize(matrix)
@@ -40,27 +42,46 @@ class PPM
     context_probabilities_summed_along_positions[alpha][beta][gamma]
   end
 
-
-  def mean_context_probabilities
-    @mean_context_probability_summed_cache ||= (0...4).each_with_object(Hash.new){|a, h1|
-      h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
-        h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
-          # sum of context probabilites sum contexts along all positions inside of motif (except two bounding ones)
-          h3[g] = context_probability_sum_along_positions_calculate(a, b, g) / (length - 2).to_f
-        }
-      }
-    }
+  def context_frequency_at_pos(ctx, pos)
+    alpha, beta, gamma = ctx.indices
+    flank_5_prob = (pos == 0) ? 0.25 : matrix[pos - 1][alpha]
+    flank_3_prob = (pos + 1 == length) ? 0.25 : matrix[pos + 1][gamma]
+    flank_5_prob * matrix[pos][beta] * flank_3_prob
   end
 
-  def mean_context_probability(alpha, beta, gamma)
-    mean_context_probabilities[alpha][beta][gamma]
+  def context_frequency(ctx)
+    (0 ... length).map{|pos|
+      context_frequency_at_pos(ctx, pos)
+    }.inject(0.0, &:+) / length
   end
 
-  def context_probability_sum_along_positions_calculate(alpha, beta, gamma)
-    (1 ... (length - 1)).map{|pos|
-      context_probability_at_pos(alpha, beta, gamma, pos)
-    }.inject(0.0, &:+)
+  def mean_context_distribution
+    raise 'Motif too short'  if length < 3
+    Context.each.map{|ctx|
+      [ctx, context_frequency(ctx)]
+    }.to_h
   end
+
+  # def mean_context_probabilities
+  #   @mean_context_probability_summed_cache ||= (0...4).each_with_object(Hash.new){|a, h1|
+  #     h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
+  #       h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
+  #         # sum of context probabilites sum contexts along all positions inside of motif (except two bounding ones)
+  #         h3[g] = context_probability_sum_along_positions_calculate(a, b, g) / (length - 2).to_f
+  #       }
+  #     }
+  #   }
+  # end
+
+  # def mean_context_probability(alpha, beta, gamma)
+  #   mean_context_probabilities[alpha][beta][gamma]
+  # end
+
+  # def context_probability_sum_along_positions_calculate(alpha, beta, gamma)
+  #   (1 ... (length - 1)).map{|pos|
+  #     context_probability_at_pos(alpha, beta, gamma, pos)
+  #   }.inject(0.0, &:+)
+  # end
 
   def expand_flanks(flank_length)
     new_matrix = matrix.map(&:dup)
