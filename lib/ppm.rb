@@ -6,20 +6,26 @@ class PPM
     @matrix = matrix
   end
 
-  def length
-    matrix.length
+  def self.from_file(filename)
+    matrix = read_matrix(filename)[:matrix]
+    PPM.new(matrix)
   end
 
+  def length; matrix.length; end
+  def size; length; end
+
   def context_probability_at_pos(alpha, beta, gamma, position)
-    @context_probability_at_pos_cache ||= (0...4).each_with_object(Hash.new){|a, h1|
-      h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
-        h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
-          h3[g] = (1 ... (length - 1)).each_with_object(Hash.new){|pos, h4|
-            h4[pos] = context_probability_at_pos_calculate(a, b, g, pos)
+    @context_probability_at_pos_cache ||= begin
+      (0...4).each_with_object(Hash.new){|a, h1|
+        h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
+          h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
+            h3[g] = (1 ... (length - 1)).each_with_object(Hash.new){|pos, h4|
+              h4[pos] = context_probability_at_pos_calculate(a, b, g, pos)
+            }
           }
         }
       }
-    }
+    end
     @context_probability_at_pos_cache[alpha][beta][gamma][position]
   end
 
@@ -28,18 +34,17 @@ class PPM
     matrix[position - 1][alpha] * matrix[position][beta] * matrix[position + 1][gamma]
   end
 
-  def context_probabilities_summed_along_positions
-    @context_probability_summed_cache ||= (0...4).each_with_object(Hash.new){|a, h1|
-      h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
-        h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
-          h3[g] = context_probability_sum_along_positions_calculate(a, b, g)
+  def context_probabilities_summed_along_positions(alpha, beta, gamma)
+    @context_probabilities_summed_along_positions_cache ||= begin
+      (0...4).each_with_object(Hash.new){|a, h1|
+        h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
+          h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
+            h3[g] = context_probability_sum_along_positions_calculate(a, b, g)
+          }
         }
       }
-    }
-  end
-
-  def context_probability_summed_along_positions(alpha, beta, gamma)
-    context_probabilities_summed_along_positions[alpha][beta][gamma]
+    end
+    @context_probabilities_summed_along_positions_cache[alpha][beta][gamma]
   end
 
   def context_frequency_at_pos(ctx, pos)
@@ -62,26 +67,28 @@ class PPM
     }.to_h
   end
 
-  # def mean_context_probabilities
-  #   @mean_context_probability_summed_cache ||= (0...4).each_with_object(Hash.new){|a, h1|
-  #     h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
-  #       h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
-  #         # sum of context probabilites sum contexts along all positions inside of motif (except two bounding ones)
-  #         h3[g] = context_probability_sum_along_positions_calculate(a, b, g) / (length - 2).to_f
-  #       }
-  #     }
-  #   }
-  # end
+  def mean_context_probabilities
+    @mean_context_probability_summed_cache ||= begin
+      (0...4).each_with_object(Hash.new){|a, h1|
+        h1[a] = (0...4).each_with_object(Hash.new){|b, h2|
+          h2[b] = (0...4).each_with_object(Hash.new){|g, h3|
+            # sum of context probabilites sum contexts along all positions inside of motif (except two bounding ones)
+            h3[g] = context_probability_sum_along_positions_calculate(a, b, g) / (length - 2).to_f
+          }
+        }
+      }
+    end
+  end
 
-  # def mean_context_probability(alpha, beta, gamma)
-  #   mean_context_probabilities[alpha][beta][gamma]
-  # end
+  def mean_context_probability(alpha, beta, gamma)
+    mean_context_probabilities[alpha][beta][gamma]
+  end
 
-  # def context_probability_sum_along_positions_calculate(alpha, beta, gamma)
-  #   (1 ... (length - 1)).map{|pos|
-  #     context_probability_at_pos(alpha, beta, gamma, pos)
-  #   }.inject(0.0, &:+)
-  # end
+  def context_probability_sum_along_positions_calculate(alpha, beta, gamma)
+    (1 ... (length - 1)).map{|pos|
+      context_probability_at_pos(alpha, beta, gamma, pos)
+    }.inject(0.0, &:+)
+  end
 
   def expand_flanks(flank_length)
     new_matrix = matrix.map(&:dup)
@@ -102,9 +109,7 @@ class PPM
   end
 
   def to_pcm(count)
-    new_matrix = matrix.map{|probs|
-      probs.map{|prob| prob * count }
-    }
+    new_matrix = pfm2pcm({matrix: matrix, name: nil}, word_count: count)[:matrix]
     PCM.new(new_matrix)
   end
 

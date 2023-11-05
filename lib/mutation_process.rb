@@ -64,29 +64,29 @@ class MutationProcess
     normalized_densities[directed_ctx] * ppm.context_frequency_at_pos(orig_ctx, pos)
   end
 
-  def kappa(ppm)
-    inv_kappa = (0 ... ppm.length).map{|pos|
+  def unnormed_positional_profile(ppm)
+    (0 ... ppm.length).map{|pos|
       DirectedContext.each.map{|directed_ctx|
-        orig_ctx = directed_ctx.original_context
         unnormed_positional_frequency(ppm, pos, directed_ctx)
       }.sum
-    }.sum
+    }
+  end
+
+  def kappa(ppm)
+    inv_kappa = unnormed_positional_profile(ppm).sum
     1.0 / inv_kappa
   end
 
   def positional_profile(ppm)
-    ppm_kappa = kappa(ppm)
-    non_normalized_context_profile = (0 ... ppm.length).map{|pos|
-      DirectedContext.each.map{|directed_ctx|
-        unnormed_positional_frequency(ppm, pos, directed_ctx)
-      }.sum * ppm_kappa
-    }
+    unnormed = unnormed_positional_profile(ppm)
+    norm = 1.0 / unnormed.sum
+    unnormed.map{|v| v * norm }
   end
 
   def mean_weight_change(ppm, pwm)
     ppm_kappa = kappa(ppm)
-    non_normalized_context_profile = (0 ... ppm.length).map{|pos|
-      val = DirectedContext.each.map{|directed_ctx|
+    (0 ... ppm.length).map{|pos|
+      DirectedContext.each.map{|directed_ctx|
         unnormed_positional_frequency(ppm, pos, directed_ctx) * pwm.weight_delta(pos, directed_ctx.beta, directed_ctx.delta)
       }.sum
     }.sum * ppm_kappa
@@ -94,8 +94,8 @@ class MutationProcess
 
   def weight_stddev(ppm, pwm)
     ppm_kappa = kappa(ppm)
-    sqr_change = non_normalized_context_profile = (0 ... ppm.length).map{|pos|
-      val = DirectedContext.each.map{|directed_ctx|
+    sqr_change = (0 ... ppm.length).map{|pos|
+      DirectedContext.each.map{|directed_ctx|
         unnormed_positional_frequency(ppm, pos, directed_ctx) * pwm.weight_delta(pos, directed_ctx.beta, directed_ctx.delta) ** 2
       }.sum
     }.sum * ppm_kappa

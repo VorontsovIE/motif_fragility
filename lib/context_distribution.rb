@@ -1,6 +1,8 @@
 require_relative 'context'
 require_relative 'context_dependent_counts'
 
+# ToDo: do we need context distribution if we already have ContextDependentCounts.
+# ToDo: check comment of .uniform method
 class ContextDistribution
   def initialize(counts)
     @counts = counts
@@ -23,6 +25,7 @@ class ContextDistribution
     ContextDistribution.new(ContextDependentCounts.new(new_counts))
   end
 
+  # ToDo: check if it's ok that here are non-integer counts
   def self.uniform
     hsh = Context.each.map{|ctx|
       [ctx, 1.0 / (4**3)]

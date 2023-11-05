@@ -1,14 +1,4 @@
-def numeric?(str)
-  !!Float(str) rescue false
-end
-
-def read_matrix(filename)
-  File.readlines(filename).map(&:chomp).map(&:split).drop_while{|row|
-    ! numeric?( row.first )
-  }.map{|row|
-    row.map(&:to_f)
-  }
-end
+require_relative 'matrix_operations'
 
 class PCM
   attr_reader :matrix
@@ -21,26 +11,17 @@ class PCM
   end
 
   def to_ppm
-    new_matrix = matrix.map{|counts|
-      sum = counts.inject(0.0, &:+)
-      counts.map{|cnt| cnt / sum }
-    }
+    new_matrix = pcm2pfm({matrix: self.matrix, name: nil})[:matrix]
     PPM.new(new_matrix)
   end
 
-  def to_pwm
-    new_matrix = matrix.map do |pos|
-      count = pos.inject(0.0, &:+)
-      actual_pseudocount = Math.log([count, 2].max)
-      pos.map do |el|
-        Math.log((el + 0.25 * actual_pseudocount).to_f / (0.25*(count + actual_pseudocount)) )
-      end
-    end
+  def to_pwm(pseudocount: :log)
+    new_matrix = pcm2pwm({matrix: self.matrix, name: nil}, pseudocount: pseudocount)[:matrix]
     PWM.new(new_matrix)
   end
 
   def self.from_file(filename)
-    matrix = read_matrix(filename)
+    matrix = read_matrix(filename)[:matrix]
     PCM.new(matrix)
   end
 
@@ -51,12 +32,15 @@ class PCM
 
   def with_pseudocount
     new_matrix = matrix.map{|pos|
-      count = pos.inject(0.0, &:+)
-      actual_pseudocount = Math.log([count, 2].max)
+      pos_count = pos.inject(0.0, &:+)
+      actual_pseudocount = Math.log([pos_count, 2].max)
       pos.map{|el| el + 0.25 * actual_pseudocount}
     }
     PCM.new(new_matrix)
   end
+
+  def length; matrix.length; end
+  def size; length; end
 end
 
 ###############
@@ -68,7 +52,7 @@ class PWM
   end
 
   def self.from_file(filename)
-    matrix = read_matrix(filename)
+    matrix = read_matrix(filename)[:matrix]
     PWM.new(matrix)
   end
 
@@ -97,6 +81,8 @@ class PWM
     PWM.new(new_matrix)
   end
 
+  def length; matrix.length; end
+  def size; length; end
 
   alias_method :inspect, :to_s
 end
