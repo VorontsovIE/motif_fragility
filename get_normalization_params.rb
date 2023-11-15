@@ -36,32 +36,53 @@ def information_content(pos)
 end
 
 num_iterations = 100
-mutation_counts = nil
 
 contexts_wg = nil
-
-motif_length = nil
 motifs_folder = nil
+
+signatures = {}
+motif_lengths = (6..15).to_a
 
 option_parser = OptionParser.new{|opts|
   opts.on('--mutational-context FILE', 'Specify mutational process contexts'){|fn|
-    # mutation_counts = val
     mutation_counts = ContextDependentCounts.from_file(fn){|ctx|
       DirectedContext.from_string(ctx)
     }
+    signatures[fn] = mutation_counts
   }
+
   opts.on('--mutational-signature FILE:SIGNATURE', 'Specify mutational process file and signature name'){|value|
     fn, signature = value.split(':', 2) # 'COSMIC_v3.4_SBS_GRCh38.txt'
-    mutation_counts = ContextDependentCounts.from_multisignature_file(fn, signature){|ctx|
-      DirectedContext.from_string(ctx)
-    }
+    if signature == '*'
+      multiple_mutation_counts = ContextDependentCounts.signatures_in_file(fn){|ctx|
+        DirectedContext.from_string(ctx)
+      }
+      signatures = signatures.merge(multiple_mutation_counts)
+    else
+      mutation_counts = ContextDependentCounts.from_multisignature_file(fn, signature){|ctx|
+        DirectedContext.from_string(ctx)
+      }
+      signatures[signature] = mutation_counts
+    end
   }
+
   opts.on('--genomic-context FILE', 'Specify genomic contexts'){|fn|
     contexts_wg = ContextDistribution.from_file(fn).without_unknown
   }
-  opts.on('--motif-length LENGTH', 'Specify motif length'){|value|
-    motif_length = Integer(value)
+
+  opts.on('--motif-lengths LENGTH', 'Specify motif lengths. E.g. 5,9-12. Default: 6-15.'){|str|
+    motif_lengths = str.split(',').flat_map{|range|
+      vals = range.split('-').map{|v| Integer(v) }
+      if vals.size == 1
+        [vals[0]]
+      elsif vals.size == 2
+        (vals[0] .. vals[1]).to_a
+      else
+        raise
+      end
+    }
   }
+
   opts.on('--iterations N', 'Specify number of iterations for bootstraping (default: #{num_iterations})'){|value|
     num_iterations = Integer(value)
   }
@@ -74,54 +95,58 @@ option_parser = OptionParser.new{|opts|
 option_parser.parse!(ARGV)
 
 raise 'Specify motifs folder'  unless motifs_folder
-raise 'Specify motif length'  unless motif_length
 raise 'Specify genomic context'  unless contexts_wg
-raise 'Specify mutation process'  unless mutation_counts
+raise 'Specify mutation process(es)'  unless signatures.size > 0
 
-# raise 'Specify region specific contexts'  unless region_specific_contexts_fn = ARGV[2]
-# contexts_rs_frequencies = ContextDistribution.from_file(region_specific_contexts_fn).without_unknown.symmetrized.frequencies
+mutational_processes = signatures.transform_values{|signature|
+  MutationProcess.new(signature, contexts_wg).symmetrized
+}
 
-
-# mutation_counts = ContextDependentCounts.from_multisignature_file('COSMIC_v3.4_SBS_GRCh38.txt', 'SBS1'){|ctx|
-#   DirectedContext.from_string(ctx)
-# }
-
-mutational_process = MutationProcess.new(mutation_counts, contexts_wg).symmetrized
-
-
-motifs = Dir.glob("#{motifs_folder}/*").map{|fn|
+original_motifs = Dir.glob("#{motifs_folder}/*").map{|fn|
   File.readlines(fn).drop(1).map{|l|
     counts = l.chomp.split("\t").map{|x| Float(x) }
     counts.map{|cnt| cnt.to_f / counts.sum }
   }
 }; nil
-positions = motifs.flatten(1)
+positions = original_motifs.flatten(1)
 ic_threshold = positions.map{|pos| information_content(pos) }.quantile(0.25)
 positions = positions.select{|pos| information_content(pos) <= ic_threshold }.shuffle; nil
 
-# motifs.select!{|matrix| matrix.length == motif_length }
 
+result = motif_lengths.map{|motif_length|
+  $stderr.puts "Motif length: #{motif_length}"
+  simulated_motif_infos = num_iterations.times.map{
+    $stderr.print '.'
+    # positions = original_motifs.select{|matrix| matrix.length == motif_length }.flatten(1)
+    # pcm = PCM.new(original_motifs.sample.shuffle).to_ppm.to_pcm(100)
+    # pcm = PCM.new(original_motifs.sample).to_ppm.to_pcm(100)
+    pcm = PCM.new(positions.shuffle.first(motif_length)).to_ppm.to_pcm(100)
+    ppm = pcm.to_ppm
+    pwm = pcm.to_pwm(pseudocount: :log)
+    pwm_fn = write_temp_matrix(pwm)
 
-background_infos = num_iterations.times.map {
-  $stderr.print '.'
-  pcm = PCM.new(positions.shuffle.first(motif_length)).to_ppm.to_pcm(100)
-  # pcm = PCM.new(motifs.sample.shuffle).to_ppm.to_pcm(100)
-  # pcm = PCM.new(motifs.sample).to_ppm.to_pcm(100)
-  ppm = pcm.to_ppm
-  pwm = pcm.to_pwm(pseudocount: :log)
-  pwm_fn = write_temp_matrix(pwm)
+    thresholds_fn ||= make_thresholds(pwm_fn, thresholds_fn: nil)
+    bsearch_table = read_bsearch_table(thresholds_fn)
+    {pcm: pcm, ppm: ppm, pwm: pwm, pwm_fn: pwm_fn, thresholds_fn: thresholds_fn, bsearch_table: bsearch_table}
+  }
 
-  thresholds_fn ||= make_thresholds(pwm_fn, thresholds_fn: nil)
-  bsearch_table = read_bsearch_table(thresholds_fn)
+  background_by_signature = mutational_processes.map{|signature_name, mutational_process|
+    $stderr.print '+'
+    background_infos = simulated_motif_infos.map{|motif_info|
+      mutation_action_infos(mutational_process, motif_info[:ppm], motif_info[:pwm], motif_info[:bsearch_table])
+    }
 
-  mutation_action_infos(mutational_process, ppm, pwm, bsearch_table)
-}
-$stderr.puts
+    metrics = background_infos.first.keys
+    background_stats = metrics.map{|metric_name|
+      metric_values = background_infos.map{|info| info[metric_name] }
+      [metric_name, {mean: metric_values.mean, stddev: metric_values.stddev}]
+    }.to_h
 
-metrics = background_infos.first.keys
-result = metrics.map{|metric_name|
-  metric_values = background_infos.map{|info| info[metric_name] }
-  [metric_name, {mean: metric_values.mean, stddev: metric_values.stddev}]
+    [signature_name, background_stats]
+  }.to_h
+
+  $stderr.puts
+  [motif_length, background_by_signature]
 }.to_h
 
-puts result.to_json
+puts result.to_h
