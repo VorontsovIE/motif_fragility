@@ -6,27 +6,9 @@ require_relative 'lib/mutation_process'
 # require_relative 'lib/motif_mutation'
 require_relative 'lib/context_distribution'
 require_relative 'lib/score_to_pvalue'
+require_relative 'basic_stats'
 require 'optparse'
 require 'gruff'
-
-module Enumerable
-  def mean
-    (length == 0) ? nil : sum.to_f / length
-  end
-
-  def variance
-    m = mean
-    (length < 2) ? nil : map{|x| (x - m) ** 2 }.sum.to_f / (length - 1)
-  end
-
-  def stddev
-    variance ** 0.5
-  end
-end
-
-def zscore(val, m, std)
-  (val - m) / std
-end
 
 def mutation_action_infos(mutational_process, ppm, pwm, bsearch_table)
   attractiveness = mutational_process.motif_attractiveness(ppm)
