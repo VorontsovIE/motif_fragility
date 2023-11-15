@@ -14,7 +14,7 @@ class ContextDependentCounts
     self.new(result)
   end
 
-  def self.from_cosmic_file(filename, signature_name, parse_value: ->(s){ s.to_f }, &block)
+  def self.from_multisignature_file(filename, signature_name, parse_value: ->(s){ s.to_f }, &block)
     result = Hash.new(0)
     lns = File.readlines(filename)
     header = lns.first.chomp.split("\t") # Type SBS1 SBS2 ...
@@ -25,6 +25,22 @@ class ContextDependentCounts
       result[ctx] = parse_value.call(count)
     }
     self.new(result)
+  end
+
+  def self.signatures_in_file(filename, parse_value: ->(s){ s.to_f }, &block)
+    lns = File.readlines(filename)
+    header = lns.first.chomp.split("\t") # Type SBS1 SBS2 ...
+    (1 ... header.length).map{|idx|
+      signature_name = header[idx]
+      signature_values = Hash.new(0)
+      lns.drop(1).each{|l|
+        ctx, count = l.chomp.split("\t").values_at(0, idx) # A[C>A]A 0.0008760226353560026
+        ctx = block.call(ctx)  if block_given?
+        signature_values[ctx] = parse_value.call(count)
+      }
+      signature = self.new(signature_values)
+      [signature_name, signature]
+    }.to_h
   end
 
   def [](ctx)

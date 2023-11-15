@@ -48,8 +48,8 @@ option_parser = OptionParser.new{|opts|
     }
   }
   opts.on('--mutational-signature FILE:SIGNATURE', 'Specify mutational process file and signature name'){|value|
-    cosmic_fn, signature = value.split(':', 2) # 'COSMIC_v3.4_SBS_GRCh38.txt'
-    mutation_counts = ContextDependentCounts.from_cosmic_file(cosmic_fn, signature){|ctx|
+    fn, signature = value.split(':', 2) # 'COSMIC_v3.4_SBS_GRCh38.txt'
+    mutation_counts = ContextDependentCounts.from_multisignature_file(fn, signature){|ctx|
       DirectedContext.from_string(ctx)
     }
   }
@@ -73,7 +73,7 @@ option_parser.parse!(ARGV)
 # contexts_rs_frequencies = ContextDistribution.from_file(region_specific_contexts_fn).without_unknown.symmetrized.frequencies
 
 
-# mutation_counts = ContextDependentCounts.from_cosmic_file('COSMIC_v3.4_SBS_GRCh38.txt', 'SBS1'){|ctx|
+# mutation_counts = ContextDependentCounts.from_multisignature_file('COSMIC_v3.4_SBS_GRCh38.txt', 'SBS1'){|ctx|
 #   DirectedContext.from_string(ctx)
 # }
 
