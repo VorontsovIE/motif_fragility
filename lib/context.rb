@@ -69,7 +69,8 @@ end
 # (alpha, beta, gamma) --> (alpha, delta, gamma)
 class DirectedContext
   attr_reader :alpha, :beta, :gamma, :delta
-  SNV_REGEXP = /^(?<flank_5>[ACGT])\[(?<before>[ACGT])[\/>](?<after>[ACGT])\](?<flank_3>[ACGT])$/i
+  # A[C/T]G, or A[C>T]G, or ACG_T
+  SNV_REGEXP = /^(?<flank_5>[ACGT])\[(?<before>[ACGT])[\/>](?<after>[ACGT])\](?<flank_3>[ACGT])$|^(?<flank_5>[ACGT])(?<before>[ACGT])(?<flank_3>[ACGT])_(?<after>[ACGT])$/i
   def initialize(alpha, beta, gamma, delta)
     raise 'Only indices for ACGT allowed'  unless [alpha, beta, gamma, delta].all?{|idx|  0 <= idx && idx <= 3}
     raise 'Central nucleotide not altered'  if beta == delta
