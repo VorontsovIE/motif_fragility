@@ -1,11 +1,3 @@
-# for MOTIF_LENGTH in $(seq 3 42); do
-#   echo ruby get_normalization_params.rb --mutational-signature 'TOPMed_10kb_spectra.tsv:*' \
-#        --genomic-context genomic_contexts/hg38_contexts.tsv --motif-lengths ${MOTIF_LENGTH} \
-#        --motifs ./motifs_freeze --iterations 10000 \
-#        \> background_metrics/bg_metrics_len_${MOTIF_LENGTH}.json;
-# done | /usr/bin/time -v parallel
-# ruby -rjson -e 'puts Dir.glob("background_metrics/*").map{|fn| JSON.parse(File.read(fn)) }.inject(&:merge).sort.to_h.to_json' > background_metrics.json
-
 require_relative 'lib/pcm'
 require_relative 'lib/ppm'
 require_relative 'lib/context'
@@ -14,12 +6,33 @@ require_relative 'lib/mutation_process'
 require_relative 'lib/context_distribution'
 require_relative 'lib/score_to_pvalue'
 require_relative 'basic_stats'
-require_relative 'utils'
 require 'optparse'
 require 'json'
 
+def mutation_action_infos(mutational_process, ppm, pwm, bsearch_table)
+  attractiveness = mutational_process.motif_attractiveness(ppm)
+  mean_weight_change = mutational_process.mean_weight_change(ppm, pwm)
+  weight_stddev = mutational_process.weight_stddev(ppm, pwm)
+
+  mean_score = pwm.mean_score(ppm)
+  mean_pv = -Math.log10(pvalue_by_score(mean_score, bsearch_table))
+  pv_after = -Math.log10(pvalue_by_score(mean_score + mean_weight_change, bsearch_table))
+  pv_after_corrected = -Math.log10(pvalue_by_score(mean_score + attractiveness * mean_weight_change, bsearch_table))
+  info = {
+    mean_score: mean_score,
+    mean_pv: mean_pv,
+    attractiveness: attractiveness, #.round(2),
+    mean_weight_change: mean_weight_change, #.round(2),
+    stddev_weight_change: weight_stddev, #.round(2),
+    pvalue_change: (pv_after - mean_pv), #.round(2),
+    corrected_pvalue_change: (pv_after_corrected - mean_pv), #.round(2),
+  }
+  info
+end
+
+
 def information_content(pos)
-  2 + pos.map{|freq| (freq == 0) ? 0 : Math.log2(freq) * freq }.sum
+  2 + pos.map{|freq| (freq == 0) ? 0 : Math.log(freq) * freq }.sum
 end
 
 num_iterations = 100
@@ -31,9 +44,31 @@ signatures = {}
 motif_lengths = (6..15).to_a
 
 option_parser = OptionParser.new{|opts|
-  CLI.mutational_context_option(opts)
-  CLI.genomic_context_option(opts)
-  CLI.mutational_signature_option(opts)
+  opts.on('--mutational-context FILE', 'Specify mutational process contexts'){|fn|
+    mutation_counts = ContextDependentCounts.from_file(fn){|ctx|
+      DirectedContext.from_string(ctx)
+    }
+    signatures[fn] = mutation_counts
+  }
+
+  opts.on('--mutational-signature FILE:SIGNATURE', 'Specify mutational process file and signature name'){|value|
+    fn, signature = value.split(':', 2) # 'COSMIC_v3.4_SBS_GRCh38.txt'
+    if signature == '*'
+      multiple_mutation_counts = ContextDependentCounts.signatures_in_file(fn){|ctx|
+        DirectedContext.from_string(ctx)
+      }
+      signatures = signatures.merge(multiple_mutation_counts)
+    else
+      mutation_counts = ContextDependentCounts.from_multisignature_file(fn, signature){|ctx|
+        DirectedContext.from_string(ctx)
+      }
+      signatures[signature] = mutation_counts
+    end
+  }
+
+  opts.on('--genomic-context FILE', 'Specify genomic contexts'){|fn|
+    contexts_wg = ContextDistribution.from_file(fn).without_unknown
+  }
 
   opts.on('--motif-lengths LENGTH', 'Specify motif lengths. E.g. 5,9-12. Default: 6-15.'){|str|
     motif_lengths = str.split(',').flat_map{|range|
@@ -114,4 +149,4 @@ result = motif_lengths.map{|motif_length|
   [motif_length, background_by_signature]
 }.to_h
 
-puts result.to_h.to_json
+puts result.to_h

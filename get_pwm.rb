@@ -49,7 +49,7 @@ end
 
 def pcm2pfm(pcm)
   pfm_matrix = pcm[:matrix].map{|row|
-    norm = row.sum.to_f
+    norm = row.sum
     row.map{|x| x.to_f / norm }
   }
   {name: pcm[:name], matrix: pfm_matrix}
@@ -57,9 +57,6 @@ end
 
 def pfm2pcm(pfm, word_count: 100)
   pcm_matrix = pfm[:matrix].map{|row|
-    norm = row.sum.to_f
-    row.map{|el| el / norm }
-  }.map{|row|
     row.map{|el| el * word_count }
   }
   {name: pfm[:name], matrix: pcm_matrix}
